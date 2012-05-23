@@ -162,13 +162,10 @@ void runInterruptServices() {  //called from loop, take your time.
 
 			if (guestAccess) {
 				fileWrite(logFile, "Guests", "Allowed", true);
-				digitalWrite(GUESTOKLED, HIGH);
 			}
 			else {
 				fileWrite(logFile, "Guests", "Denied", true);
-				digitalWrite(GUESTOKLED, LOW);
 			}
-			digitalWrite(DOORBELLLED, (guestAccess ? HIGH : LOW));
 		}
 //    postStateSpace(false);  //tell the server right now.
   }
@@ -180,8 +177,9 @@ void runInterruptServices() {  //called from loop, take your time.
 		closeSpace();
 	}
 
+	// Status indicators LED settings go here.
 	digitalWrite(LOCKUPLED, (spaceOpen ? LOW : HIGH));
 	digitalWrite(GUESTOKLED, (guestAccess ? HIGH : LOW));
-
+	digitalWrite(DOORBELLLED, (guestAccess ? HIGH : LOW));
 }
 
