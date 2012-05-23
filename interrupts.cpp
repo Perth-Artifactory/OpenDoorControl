@@ -176,9 +176,13 @@ void runInterruptServices() {  //called from loop, take your time.
 
 	if ((LOCKUPBIT & interruptFlags) != 0) {
 		interruptFlags &= ~LOCKUPBIT;
-
-		fileWrite(logFile, "Lockup pressed", "", true);
-		closeSpace();
+		if (spaceOpen) {
+			fileWrite(logFile, "Lockup pressed", "", true);
+			closeSpace();
+		}
+		else {
+			fileWrite(logFile, "Space already locked", "", true);
+		}
 	}
 
 	// Status indicators LED settings go here.
