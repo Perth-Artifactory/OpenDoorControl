@@ -160,15 +160,10 @@ void ledBlink(){
 
 void ledFade(){
   if ( fadePin <= 0) { return; }
+  float faderSeed = millis()/1000.0;
+  int fVal = 127 + (127 * sin( faderSeed * 2.0 * 3.14159 ));
 
-  if ( fadeVal == 0) {
-    fadeMod = 1; 
-  }
-  else {
-    if ( fadeVal == 255 ) {
-      fadeMod = -1;
-    }
-  }
-  analogWrite(fadePin, fadeVal);
+  analogWrite(fadePin, fVal);
+
   fadeVal += fadeMod;
 }
