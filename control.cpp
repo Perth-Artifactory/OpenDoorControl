@@ -143,27 +143,24 @@ void DoorStatusRefresh() {
 	digitalWrite(STATUS_G, LOW);
 	digitalWrite(STATUS_B, LOW);
 	slowTimers[TIMERDOORSTATUS].active = false;
-  blinkCount = 0; //Resetting this to 0 here to stop potential overflows.
 }
 
 void ledBlink(){
   if ( blinkPin <= 0) { return; }
 
-  if ( (blinkCount % 2) == 1) {
+  if ( blinkStatus ) {
     digitalWrite(blinkPin, LOW);
+    blinkStatus = false;
   }
   else {
     digitalWrite(blinkPin, HIGH);
+    blinkStatus = true;
   }
-  blinkCount++;
 }
 
 void ledFade(){
   if ( fadePin <= 0) { return; }
   float faderSeed = millis()/1000.0;
   int fVal = 127 + (127 * sin( faderSeed * 2.0 * 3.14159 ));
-
   analogWrite(fadePin, fVal);
-
-  fadeVal += fadeMod;
 }

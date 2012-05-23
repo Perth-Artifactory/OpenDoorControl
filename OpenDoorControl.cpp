@@ -82,12 +82,10 @@ const char* logFilePrefix = "log";  //file writes are append operations on exist
 const char* logFileSuffix = ".txt";
 char logFile[13];  //the name we actually use
 
-int blinkCount = 0;
+bool blinkStatus = false;
 int blinkPin = 0;
 
 int fadePin = 0;
-int fadeVal = 0;
-int fadeMod = 1;
 
 void setup() {
   // start the serial library:

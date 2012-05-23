@@ -138,7 +138,7 @@ extern char logFile[13];
 #define LOGDIGITS 4  //integer makes 4hex digits
 //archived logs will have LOGDIGITS hex digits following them
 
-extern int blinkCount;
+extern bool blinkStatus;
 extern int blinkPin;
 
 extern int fadePin;
