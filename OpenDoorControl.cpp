@@ -55,11 +55,12 @@ lessons learned:
 LiquidCrystal lcd(32, 30, 28, 26, 24, 22);
 RTC_DS1307 RTC;  //using hardware i2c 18, 19
 
-bool SDcardPresent = false;		// true if sd card is accessible and has at least a full members file.
-bool spaceOpen = false;			// allows associate members
-bool guestAccess = false;		// links doorbell to doorstrike
-bool reedswitchState = false;	// TODO
-bool onNTPtime = false;			// true after the first NTP success.
+bool SDcardPresent = false;     // true if sd card is accessible and has at least a full members file.
+bool spaceOpen = false;         // allows associate members
+bool guestAccess = false;       // links doorbell to doorstrike
+bool reedswitchState = false;   // TODO
+bool onNTPtime = false;         // true after the first NTP success.
+bool spaceGrace = false;        // Space is in post-lockup grace period
 
 timer fastTimers[NUMFASTTIMERS];
 timer slowTimers[NUMSLOWTIMERS];
@@ -81,6 +82,8 @@ const char* logFilePrefix = "log";  //file writes are append operations on exist
 const char* logFileSuffix = ".txt";
 char logFile[13];  //the name we actually use
 
+int blinkCount = 0;
+int blinkPin = 0;
 
 void setup() {
   // start the serial library:
@@ -190,6 +193,14 @@ void setup() {
 	slowTimers[TIMERDOORSTATUS].period = 2;	// seconds
 	slowTimers[TIMERDOORSTATUS].active = false;
 	slowTimers[TIMERDOORSTATUS].expire = DoorStatusRefresh;
+
+  slowTimers[TIMEREXITGRACE].period = 120;
+  slowTimers[TIMEREXITGRACE].active = false;
+  slowTimers[TIMEREXITGRACE].expire = closeSpaceFinal;
+
+  slowTimers[TIMERLEDBLINK].period = 1;
+  slowTimers[TIMERLEDBLINK].active = false;
+  slowTimers[TIMERLEDBLINK].expire = ledBlink;
 
   PCICR |= (1 << PCIE2);  //enable port-change interrupt on port-change-byte 2
   PCMSK2 |= DOORBELLBIT;

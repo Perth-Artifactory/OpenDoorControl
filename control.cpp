@@ -70,10 +70,27 @@ void openSpace() {
 }
 
 void closeSpace() {
+  fileWrite(logFile, "Space closing, grace period started", "", true);
+  slowTimers[TIMEREXITGRACE].start = theTime;
+  slowTimers[TIMEREXITGRACE].active = true;
+
+  blinkPin = STATUS_R;
+  slowTimers[TIMERLEDBLINK].start = theTime;
+  slowTimers[TIMERLEDBLINK].active = true;
+
+  spaceOpen = false;
+  guestAccess = false;
+  spaceGrace = true;
+}
+
+void closeSpaceFinal() {
   fileWrite(logFile, "Closing Space", "", true);
+  slowTimers[TIMEREXITGRACE].active = false;
+  slowTimers[TIMERLEDBLINK].active = false;
   // TODO: tell the server the space is closed
   spaceOpen = false;
   guestAccess = false;
+  spaceGrace = false;
 }
 
 void openTheDoor() {
@@ -124,5 +141,17 @@ void DoorStatusRefresh() {
 	digitalWrite(STATUS_G, LOW);
 	digitalWrite(STATUS_B, LOW);
 	slowTimers[TIMERDOORSTATUS].active = false;
+  blinkCount = 0; //Resetting this to 0 here to stop potential overflows.
 }
 
+void ledBlink(){
+  if ( blinkPin <= 0) { return; }
+
+  if ( (blinkCount % 2) == 1) {
+    digitalWrite(blinkPin, LOW);
+  }
+  else {
+    digitalWrite(blinkPin, HIGH);
+  }
+  blinkCount++;
+}

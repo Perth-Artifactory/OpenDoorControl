@@ -114,17 +114,23 @@ void runInterruptServices() {  //called from loop, take your time.
 
     fileWrite(logFile, "Door Bell!", "", true);
 
-	if (spaceOpen) {
-		if (guestAccess) {			// If the space is open and guest access is enabled
-			openTheDoor();			// just open the door
+    if (spaceGrace) {				// Special condition if the space is within the 120 second post-lockup grace period.
+    	fileWrite(logFile, "Space opened within grace period.","",true);
+    	openTheDoor();				// Open the door
+    }
+    else {
+		if (spaceOpen) {
+			if (guestAccess) {			// If the space is open and guest access is enabled
+				openTheDoor();			// just open the door
+			}
+			else {						// if the space is open without guest access being enabled
+				DoorBell();				// sound the doorbell
+				DoorStatus(0, 0, 1);	// and illuminate the blue door status LED
+			}
 		}
-		else {						// if the space is open without guest access being enabled
-			DoorBell();				// sound the doorbell
-			DoorStatus(0, 0, 1);	// and illuminate the blue door status LED
+		else {							// finally, if the space isnt open				
+			DoorStatus(1, 0, 0);		// illuminate the red door status LED
 		}
-	}
-	else {							// finally, if the space isnt open				
-		DoorStatus(1, 0, 0);		// illuminate the red door status LED
 	}
   }
 

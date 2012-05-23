@@ -38,6 +38,7 @@ void DoorBell();
 void DoorBellRefresh();
 void DoorStatus(bool r, bool g, bool b);
 void DoorStatusRefresh();
+void closeSpaceFinal();
 
 #endif /* CONTROL_H */
 
