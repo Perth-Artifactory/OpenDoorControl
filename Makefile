@@ -39,7 +39,7 @@ vpath %.c $(subst ${ },:,$(wildcard /usr/share/arduino/libraries/*/utility))
 vpath %.cpp /usr/share/arduino/hardware/arduino/cores/arduino
 vpath %.cpp $(subst ${ },:,$(wildcard /usr/share/arduino/libraries/*/))
 vpath %.cpp $(subst ${ },:,$(wildcard /usr/share/arduino/libraries/*/utility))
-SRC = wiring.c wiring_digital.c twi.c
+SRC = wiring.c wiring_digital.c wiring_analog.c twi.c
 CXXSRC = $(TARGET).cpp $(LIBS) aux.cpp control.cpp general.cpp interrupts.cpp RFID.cpp SDfiles.cpp RTClib/RTClib.cpp
 #CXXSRC = $(wildcard *.cpp) $(LIBS)
 

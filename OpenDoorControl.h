@@ -95,11 +95,13 @@ extern bool spaceGrace;
 extern bool doorStatusRepeat;
 
 //Fast Timers ***************************************(uS)
-#define NUMFASTTIMERS 4
+#define NUMFASTTIMERS 5
 #define TIMERSECOND 0
 #define TIMERSLOWPOLL 1
 #define TIMERSTRIKE 2
 #define TIMERLEDBLINK 3
+#define TIMERLEDFADER 4
+
 
 //#define TIMERSERVER 3
 #define NUMSLOWTIMERS 6
@@ -138,6 +140,10 @@ extern char logFile[13];
 
 extern int blinkCount;
 extern int blinkPin;
+
+extern int fadePin;
+extern int fadeVal;
+extern int fadeMod;
 
 /*
 byte mac[] = {0x31, 0x41, 0x15, 0x92, 0x65, 0x38};  //the mac of the door

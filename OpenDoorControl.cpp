@@ -85,6 +85,10 @@ char logFile[13];  //the name we actually use
 int blinkCount = 0;
 int blinkPin = 0;
 
+int fadePin = 0;
+int fadeVal = 0;
+int fadeMod = 1;
+
 void setup() {
   // start the serial library:
   Serial.begin(9600);	//debug messages
@@ -169,6 +173,11 @@ void setup() {
   fastTimers[TIMERLEDBLINK].period = 1 S; // Seconds
   fastTimers[TIMERLEDBLINK].active = false;
   fastTimers[TIMERLEDBLINK].expire = ledBlink;
+
+  fastTimers[TIMERLEDFADER].period = 10 MS;
+  fastTimers[TIMERLEDFADER].active = false;
+  fastTimers[TIMERLEDFADER].expire = ledFade;
+
 /*
   fastTimers[TIMERSERVER].period = 10 S;
   fastTimers[TIMERSERVER].active = false;
