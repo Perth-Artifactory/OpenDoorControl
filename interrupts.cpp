@@ -116,7 +116,11 @@ void runInterruptServices() {  //called from loop, take your time.
 
     if (spaceGrace) {				// Special condition if the space is within the 120 second post-lockup grace period.
     	fileWrite(logFile, "Space opened within grace period.","",true);
-    	openTheDoor();				// Open the door
+    	slowTimers[TIMEREXITGRACE].active = false;	// Stop the grace period timer
+ 		fastTimers[TIMERLEDBLINK].active = false;	// Stop the LED blink timer
+ 		spaceGrace = false;							// Disable the grace period mode and
+ 		openSpace();								// Reset the space to open
+    	openTheDoor();								// Open the door
     }
     else {
 		if (spaceOpen) {

@@ -64,7 +64,6 @@ void dumpLogs() {
 
 void openSpace() {
   fileWrite(logFile, "Opening Space", "", true);
-
   // TODO: tell the server the space is open
   spaceOpen = true;
 }
@@ -75,8 +74,8 @@ void closeSpace() {
   slowTimers[TIMEREXITGRACE].active = true;
 
   blinkPin = STATUS_R;
-  slowTimers[TIMERLEDBLINK].start = theTime;
-  slowTimers[TIMERLEDBLINK].active = true;
+  fastTimers[TIMERLEDBLINK].start = micros();
+  fastTimers[TIMERLEDBLINK].active = true;
 
   spaceOpen = false;
   guestAccess = false;
@@ -86,7 +85,7 @@ void closeSpace() {
 void closeSpaceFinal() {
   fileWrite(logFile, "Closing Space", "", true);
   slowTimers[TIMEREXITGRACE].active = false;
-  slowTimers[TIMERLEDBLINK].active = false;
+  fastTimers[TIMERLEDBLINK].active = false;
   // TODO: tell the server the space is closed
   spaceOpen = false;
   guestAccess = false;
@@ -100,7 +99,9 @@ void openTheDoor() {
   fastTimers[TIMERSTRIKE].start = micros();
   fastTimers[TIMERSTRIKE].active = true;
   //DoorStatus(0, 1, 0);
+  digitalWrite(STATUS_R, LOW);
   digitalWrite(STATUS_G, HIGH);
+  digitalWrite(STATUS_B, LOW);
 }
 
 void closeTheDoor() {

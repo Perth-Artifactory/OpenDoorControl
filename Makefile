@@ -17,7 +17,8 @@
 #
 
 #PORT = /dev/ttyUSB0
-PORT = /dev/ttyACM0
+#PORT = /dev/ttyACM0
+PORT = /dev/tty.usbmodemfa131
 #MCU = atmega1281
 MCU = atmega2560
 #F_CPU = 8000000
@@ -28,6 +29,7 @@ UPLOAD_RATE = 115200
 
 TARGET = OpenDoorControl
 #ARDUINO = /usr/share/arduino/hardware/arduino/variants/mega
+#PATH=${PATH}:/Applications/Arduino.app/Contents/Resources/Java/hardware/tools/avr/bin
 ARDUINO = /usr/share/arduino/hardware/arduino/cores/arduino
 LIBS = WString.cpp Print.cpp LiquidCrystal.cpp File.cpp HardwareSerial.cpp SD.cpp SdFile.cpp SdVolume.cpp Sd2Card.cpp Wire.cpp new.cpp main.cpp
 #vpath %.cpp $(subst ${ },:,$(wildcard $(ARDUINO)/*/))

@@ -162,9 +162,13 @@ void setup() {
   fastTimers[TIMERSLOWPOLL].active = true;
   fastTimers[TIMERSLOWPOLL].expire = pollSlowTimers;
 
-  fastTimers[TIMERSTRIKE].period = 10 S;
+  fastTimers[TIMERSTRIKE].period = 5 S;
   fastTimers[TIMERSTRIKE].active = false;
   fastTimers[TIMERSTRIKE].expire = closeTheDoor;
+
+  fastTimers[TIMERLEDBLINK].period = 1 S; // Seconds
+  fastTimers[TIMERLEDBLINK].active = false;
+  fastTimers[TIMERLEDBLINK].expire = ledBlink;
 /*
   fastTimers[TIMERSERVER].period = 10 S;
   fastTimers[TIMERSERVER].active = false;
@@ -194,13 +198,10 @@ void setup() {
 	slowTimers[TIMERDOORSTATUS].active = false;
 	slowTimers[TIMERDOORSTATUS].expire = DoorStatusRefresh;
 
-  slowTimers[TIMEREXITGRACE].period = 120;
+  slowTimers[TIMEREXITGRACE].period = 60; // Give a 1 minute grace period post lockup
   slowTimers[TIMEREXITGRACE].active = false;
   slowTimers[TIMEREXITGRACE].expire = closeSpaceFinal;
 
-  slowTimers[TIMERLEDBLINK].period = 1;
-  slowTimers[TIMERLEDBLINK].active = false;
-  slowTimers[TIMERLEDBLINK].expire = ledBlink;
 
   PCICR |= (1 << PCIE2);  //enable port-change interrupt on port-change-byte 2
   PCMSK2 |= DOORBELLBIT;

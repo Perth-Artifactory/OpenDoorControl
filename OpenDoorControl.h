@@ -99,15 +99,17 @@ extern bool doorStatusRepeat;
 #define TIMERSECOND 0
 #define TIMERSLOWPOLL 1
 #define TIMERSTRIKE 2
+#define TIMERLEDBLINK 3
+
 //#define TIMERSERVER 3
-#define NUMSLOWTIMERS 5
+#define NUMSLOWTIMERS 6
 #define TIMERLOGDUMP 0
 #define TIMERRTCREFRESH 1
 #define TIMERLCDTIME 2
 #define TIMERDOORBELL 3
 #define TIMERDOORSTATUS 4
 #define TIMEREXITGRACE 5
-#define TIMERLEDBLINK 6
+
 
 extern timer fastTimers[NUMFASTTIMERS];
 extern timer slowTimers[NUMSLOWTIMERS];
