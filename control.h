@@ -41,6 +41,7 @@ void DoorStatusRefresh();
 void closeSpaceFinal();
 void ledBlink();
 void ledFade();
+void clearFade();
 
 #endif /* CONTROL_H */
 

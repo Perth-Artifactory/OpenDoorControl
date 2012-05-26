@@ -186,7 +186,7 @@ void runInterruptServices() {  //called from loop, take your time.
 	}
 
 	// Status indicators LED settings go here.
-	digitalWrite(LOCKUPLED, (spaceOpen ? LOW : HIGH));
+	if ( !spaceGrace ) { digitalWrite(LOCKUPLED, (spaceOpen ? LOW : HIGH)); }
 	digitalWrite(GUESTOKLED, (guestAccess ? HIGH : LOW));
 	digitalWrite(DOORBELLLED, (guestAccess ? HIGH : LOW));
 }

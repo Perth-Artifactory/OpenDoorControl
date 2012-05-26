@@ -85,8 +85,9 @@ char logFile[13];  //the name we actually use
 bool blinkStatus = false;
 int blinkPin = 0;
 
-int fadePin = 0;
 float fadeTime = 2000.0;
+
+int fadePins[LEDFADERCOUNT] = {};
 
 void setup() {
   // start the serial library:

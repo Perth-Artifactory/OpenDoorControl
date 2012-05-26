@@ -73,7 +73,9 @@ void closeSpace() {
   slowTimers[TIMEREXITGRACE].start = theTime;
   slowTimers[TIMEREXITGRACE].active = true;
 
-  fadePin = STATUS_R;
+  fadePins[0] = STATUS_R;
+  fadePins[1] = LOCKUPLED;
+
   fastTimers[TIMERLEDFADER].start = micros();
   fastTimers[TIMERLEDFADER].active = true;
 
@@ -86,6 +88,9 @@ void closeSpaceFinal() {
   fileWrite(logFile, "Closing Space", "", true);
   slowTimers[TIMEREXITGRACE].active = false;
   fastTimers[TIMERLEDFADER].active = false;
+
+  clearFade();
+
   // TODO: tell the server the space is closed
   DoorStatus(1, 0, 1);
   spaceOpen = false;
@@ -152,8 +157,24 @@ void ledBlink(){
 }
 
 void ledFade(){
-  if ( fadePin <= 0) { return; }
+  int f = 0;
+  int fadePin = 0;
   float faderSeed = millis()/fadeTime;
   int fVal = 127 + (127 * sin( faderSeed * 2.0 * 3.14159 ));
-  analogWrite(fadePin, fVal);
+
+  while (f < LEDFADERCOUNT) {
+    fadePin = fadePins[f];
+    if ( fadePin > 0) {
+      analogWrite(fadePin, fVal);
+    }
+    f++;
+  }
+}
+
+void clearFade() {
+  int f = 0;
+  while (f < LEDFADERCOUNT) {
+    fadePins[f] = 0;
+    f++;
+  }
 }

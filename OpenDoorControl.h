@@ -112,6 +112,7 @@ extern bool doorStatusRepeat;
 #define TIMERDOORSTATUS 4
 #define TIMEREXITGRACE 5
 
+#define LEDFADERCOUNT 6
 
 extern timer fastTimers[NUMFASTTIMERS];
 extern timer slowTimers[NUMSLOWTIMERS];
@@ -141,7 +142,7 @@ extern char logFile[13];
 extern bool blinkStatus;
 extern int blinkPin;
 
-extern int fadePin;
+extern int fadePins[LEDFADERCOUNT];
 extern float fadeTime;
 
 /*
