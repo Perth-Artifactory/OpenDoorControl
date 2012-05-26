@@ -66,6 +66,7 @@ void openSpace() {
   fileWrite(logFile, "Opening Space", "", true);
   // TODO: tell the server the space is open
   spaceOpen = true;
+  spaceGrace = false;
 }
 
 void closeSpace() {
@@ -121,7 +122,27 @@ void LCDrefresh() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Artifactory Door");
-  lcdDisplayTime(1);
+
+  // There are some states that require ongoing display of data.
+
+  // If the space is in the lockup grace period, show the countdown
+  if (spaceGrace) {
+    lcd.setCursor(0, 1);
+    char output[17];
+    int remainingTime = slowTimers[TIMEREXITGRACE].period - ( theTime - slowTimers[TIMEREXITGRACE].start );
+    sprintf(output, "Lock in %d Sec\0", remainingTime);
+    lcd.print(output);
+    return;
+  }
+
+  // By default just display the time (unless the RTC is borked)
+  if (RTC.isrunning()) {
+    lcdDisplayTime(1);
+  }
+  else {
+    lcd.setCursor(0, 1);
+    lcd.print("WARN:RTC Offline\0");
+  } 
 }
 
 void DoorBell() {
