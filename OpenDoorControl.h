@@ -142,8 +142,7 @@ extern bool blinkStatus;
 extern int blinkPin;
 
 extern int fadePin;
-extern int fadeVal;
-extern int fadeMod;
+extern float fadeTime;
 
 /*
 byte mac[] = {0x31, 0x41, 0x15, 0x92, 0x65, 0x38};  //the mac of the door

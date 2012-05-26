@@ -147,20 +147,13 @@ void DoorStatusRefresh() {
 
 void ledBlink(){
   if ( blinkPin <= 0) { return; }
-
-  if ( blinkStatus ) {
-    digitalWrite(blinkPin, LOW);
-    blinkStatus = false;
-  }
-  else {
-    digitalWrite(blinkPin, HIGH);
-    blinkStatus = true;
-  }
+  digitalWrite(blinkPin, ( blinkStatus ? HIGH : LOW ));
+  blinkStatus = !blinkStatus;
 }
 
 void ledFade(){
   if ( fadePin <= 0) { return; }
-  float faderSeed = millis()/1000.0;
+  float faderSeed = millis()/fadeTime;
   int fVal = 127 + (127 * sin( faderSeed * 2.0 * 3.14159 ));
   analogWrite(fadePin, fVal);
 }
