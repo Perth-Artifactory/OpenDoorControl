@@ -44,9 +44,14 @@ void theTimeIncrement() {
 
 void pollSlowTimers() {
   for (int i = 0; i < NUMSLOWTIMERS; i++){
+    int ohShit = 0;
     while ((slowTimers[i].active) && ((theTime - slowTimers[i].start) > slowTimers[i].period)) {
       slowTimers[i].start += slowTimers[i].period;
       slowTimers[i].expire();
+      if ( ohShit >= 100 ) {
+          fileWrite(logFile, "Runaway Loop on timer ", &"123456"[i], true);
+      }
+      ohShit++;
     }
   }
 }
@@ -98,6 +103,22 @@ void closeSpaceFinal() {
   guestAccess = false;
   spaceGrace = false;
 }
+
+//void induceDeath() {
+//  unsigned long diffTime = theTime;
+//  fileWrite(logFile, "Manually Shifting: ", "+20", true);
+//  theTime += 20;
+//  fileWrite(logFile, "Time Adjusted", "", true);
+//  diffTime = theTime - diffTime;
+//  for(int i = 0; i < NUMSLOWTIMERS; i++){
+//    slowTimers[i].start +=diffTime;
+//  }
+
+ // fileWrite(logFile, "Timers Updated", "", true);
+  //fetchTime();
+//}
+
+
 
 void openTheDoor() {
   // Trigger the door strike

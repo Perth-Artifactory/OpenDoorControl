@@ -111,6 +111,7 @@ extern bool doorStatusRepeat;
 #define TIMERDOORBELL 3
 #define TIMERDOORSTATUS 4
 #define TIMEREXITGRACE 5
+//#define TIMERINDUCEDEATH 6
 
 #define LEDFADERCOUNT 6
 

@@ -52,6 +52,8 @@ lessons learned:
 #include "RFID.h"
 #include "interrupts.h"
 
+#include <avr/wdt.h>
+
 LiquidCrystal lcd(32, 30, 28, 26, 24, 22);
 RTC_DS1307 RTC;  //using hardware i2c 18, 19
 
@@ -90,10 +92,17 @@ float fadeTime = 2000.0;
 int fadePins[LEDFADERCOUNT] = {};
 
 void setup() {
+  //wdt_disable();
+  wdt_reset();
+
+  // Set the watchdog timer to 8 seconds
+  wdt_enable(WDTO_8S);
+
   // start the serial library:
   Serial.begin(9600);	//debug messages
   Serial1.begin(9600);	//RFID
   Serial.println("Artifactory Door\r\n  Booting");
+
   auxSetup();
   fetchTime();
   lcdDisplayTime(1);
@@ -184,12 +193,13 @@ void setup() {
   fastTimers[TIMERSERVER].expire = serverTimeout;
 */
   //slow timers are measured against theTime
-  slowTimers[TIMERLOGDUMP].period = 3600;  // seconds
+  slowTimers[TIMERLOGDUMP].period = 86400;  // seconds
   slowTimers[TIMERLOGDUMP].start = theTime;
   slowTimers[TIMERLOGDUMP].active = true;
   slowTimers[TIMERLOGDUMP].expire = dumpLogs;
 
-  slowTimers[TIMERRTCREFRESH].period = 36000;  // ten hours
+  slowTimers[TIMERRTCREFRESH].period = 86400;  // ten hours
+  //slowTimers[TIMERRTCREFRESH].period = 15;  // ten hours
   slowTimers[TIMERRTCREFRESH].start = theTime;
   slowTimers[TIMERRTCREFRESH].active = true;
   slowTimers[TIMERRTCREFRESH].expire = fetchTime;
@@ -211,6 +221,9 @@ void setup() {
   slowTimers[TIMEREXITGRACE].active = false;
   slowTimers[TIMEREXITGRACE].expire = closeSpaceFinal;
 
+  //slowTimers[TIMERINDUCEDEATH].period = 10;
+  //slowTimers[TIMERINDUCEDEATH].active = true;
+  //slowTimers[TIMERINDUCEDEATH].expire = induceDeath;
 
   PCICR |= (1 << PCIE2);  //enable port-change interrupt on port-change-byte 2
   PCMSK2 |= DOORBELLBIT;
@@ -255,6 +268,7 @@ void loop() {
   pollRFIDbuffer(); //there is no indication or recovery if the RFID goes down.
   pollTimers();
   runInterruptServices();
-//  pollServerBuffer();
+  //  pollServerBuffer();
+  wdt_reset();  // Pat the watchdog
 }
 

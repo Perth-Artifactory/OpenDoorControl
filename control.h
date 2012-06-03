@@ -42,6 +42,7 @@ void closeSpaceFinal();
 void ledBlink();
 void ledFade();
 void clearFade();
+//void induceDeath();
 
 #endif /* CONTROL_H */
 
