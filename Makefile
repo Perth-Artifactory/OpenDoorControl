@@ -18,7 +18,7 @@
 
 #PORT = /dev/ttyUSB0
 #PORT = /dev/ttyACM0
-PORT = /dev/tty.usbmodemfd121
+PORT = /dev/tty.usbmodemfa131
 #MCU = atmega1281
 MCU = atmega2560
 #F_CPU = 8000000
