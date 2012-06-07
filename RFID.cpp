@@ -141,28 +141,14 @@ MemberType authCard(char *cardHash) {
 	MemberType retVal = MEMBERTYPE_NONE;
 
 	// Checks the cardHash against the full member hash file
-	if (cardInFile(fullFile, cardHash)) {
+	if (cardInFile(fullFile, cardHash) > 0) {
 		retVal = MEMBERTYPE_FULL;
 	}
 	else {
-		// Checks the cardHash against the rest member hash file, and their day mask
-		uint8_t dayMask = cardInFile(restFile, cardHash);
-		/*Serial.print("cardHash = ");
-		Serial.print(cardHash);
-		Serial.print("\r\ndaymask = ");
-		Serial.print(dayMask);
-		Serial.print("\r\n");*/
-		if (dayMask > 0) {
-			DateTime now(theTime);
-			if (((1 << now.dayOfWeek()) & dayMask) != 0) {
-				retVal = MEMBERTYPE_RESTRICTED;
-			}
-			else {
-				// Is a restricted member, but this isn't their day(s).
-			}
+		if (cardInFile(restFile, cardHash)){
+			retVal = MEMBERTYPE_RESTRICTED;
 		}
 		else {
-			// Checks the cardHash against the assoc member hash file, if door open
 			if (spaceOpen) {
 				if (cardInFile(assocFile, cardHash)) {
 				  retVal = MEMBERTYPE_ASSOCIATE;
@@ -172,6 +158,7 @@ MemberType authCard(char *cardHash) {
 	}
 	return retVal;
 }
+	
 
 
 

@@ -27,66 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if 0 // Brett's v1
-bool cardInFile(char *inputFile, char *cardHash) {
-  openFile.close();  //just in case
-
-  openFile = SD.open(inputFile);
-  bool retVal = false;
-  char line[BUFSIZ];
-  int i = 0;
-
-  while((retVal == false) && (openFile.available())){
-    //parse file contents.
-    char c = ' ';  //I can't think of a better defualt to enter the loop with
-    while((c != '\n') /*&& (c != COMMENTCHAR)*/ && (openFile.available()) /*&& (i < BUFSIZ)*/){
-
-
-      if (i == BUFSIZ) {
-//        Serial.println("buffer overrun");
-        i=0;
-        while((openFile.peek() != '\n') && (openFile.available())){  //seek the end of the line
-          openFile.read();
-        }
-      }
-      else if(c == COMMENTCHAR) {
-//        Serial.println("comment begins");
-        while((openFile.peek() != '\n') && (openFile.available())){  //seek the end of the line
-          openFile.read();
-        }
-      }
-      else if((c != ' ')&&(c != '\t')) {
-//        Serial.print("*");
-        line[i] = c;
-        i++;
-      }
-
-      c = openFile.read();
-//      Serial.print(c);
-
-    }
-
-    line[i] = '\0';
-    //now we can have different lengths of hash
-//    Serial.print("comparing Strings: ");
-//    Serial.print(line);
-//    Serial.print(" , ");
-//    Serial.println(cardHash);
-
-//    if(stringCompare(line, cardHash)){
-//      retVal = true;
-//    }
-	if (strcmp(line, cardHash) == 0) {
-		retVal = true;
-	}
-    i = 0;
-    
-  }
-  openFile.close();
-  return retVal;
-}
-#endif
-
 typedef enum {
 	//PARSE_BEGIN = 0,
 	PARSE_HASH = 1,
@@ -94,11 +34,12 @@ typedef enum {
 	PARSE_COMMENT
 } ParseState;
 
-uint8_t cardInFile(char *inputFile, char *cardHash) {
+bool cardInFile(char *inputFile, char *cardHash) {
 	if (strlen(cardHash) != HASHLENGTH) {
-		//	Serial.println("Noise");
 		return 0;
 	}
+
+  DateTime now(theTime); // What's the time
 
 	openFile.close();  // just in case
 
@@ -106,15 +47,17 @@ uint8_t cardInFile(char *inputFile, char *cardHash) {
 	uint8_t retVal = 0;
 	char fileHash[BUFSIZ];
 	int i;
-	char fileDay[BUFSIZ];
+
+	char fileSchedule[41];
 	int j;
+
 	ParseState state;
 
 	while ((retVal == false) && (openFile.available())) {	// parse file contents:
 		i = 0;
 		j = 0;
 		state = PARSE_HASH;
-		char c = ' ';  // I can't think of a better defualt to enter the loop with
+		char c = ' ';  // I can't think of a better default to enter the loop with
 		while ((c != '\n') /*&& (c != COMMENTCHAR)*/ && (openFile.available()) /*&& (i < BUFSIZ)*/) {
 			c = openFile.read();
 
@@ -141,7 +84,7 @@ uint8_t cardInFile(char *inputFile, char *cardHash) {
 					if (j > BUFSIZ) {
 						state = PARSE_COMMENT;
 					}
-					fileDay[j] = c;
+					fileSchedule[j] = c;
 					j++;
 				}
 				//else { } // PARSE_COMMENT = do nothing
@@ -149,20 +92,46 @@ uint8_t cardInFile(char *inputFile, char *cardHash) {
 		}
 
 		fileHash[i] = '\0';
-		fileDay[j] = '\0';
+		fileSchedule[j] = '\0';
 
 		if (i <= 0) {
-			// Blank line, don't compare
+		  // Blank line, don't compare
 		}
-		else if (strcmp(fileHash, cardHash) == 0) {
+		else if (strcmp(fileHash, cardHash) == 0) {   // If the hash matches
 			if (j > 0) {
-				retVal = (uint8_t)(atoi(fileDay) & 0x7f);
-				//if ((retVal == INT_MAX) || (retVal == INT_MIN)) {
-				//	retVal = 0;
-				//}
+        // Interpret the scheduler data
+        // Scheduler data is 41 characters
+        int schedule[7][2] = {0};
+        for (int d = 0; d <= 6; d++){
+          int offset = ( d * 5 ) + ( d * 1 );
+
+          // There is likely a better way to do this but I can't think of it.
+          char startHour[3] = {0};
+          startHour[0] = fileSchedule[offset];
+          startHour[1] = fileSchedule[offset+1];
+          startHour[2] = fileSchedule[offset+2];
+
+          char finishHour[3] = {0};
+          finishHour[0] = fileSchedule[offset+4];
+          finishHour[1] = fileSchedule[offset+5];
+          finishHour[2] = fileSchedule[offset+6];
+
+          schedule[d][0] = atoi(startHour);
+          schedule[d][1] = atoi(finishHour);
+        }
+
+        int dayOfWeek = now.dayOfWeek();
+        int hour = now.hour();
+
+        if ( ( schedule[dayOfWeek][0] > 0 ) || ( schedule[dayOfWeek][1] > 0 ) ){
+          if ( ( hour >= schedule[dayOfWeek][0] ) && ( hour <= schedule[dayOfWeek][1] ) ){
+            retVal = true;
+          }
+        }
+
 			}
 			else {
-				retVal = 0x7f;
+				retVal = true;
 			}
 		}
 	}
