@@ -34,7 +34,7 @@ typedef enum {
 	PARSE_COMMENT
 } ParseState;
 
-bool cardInFile(char *inputFile, char *cardHash) {
+int cardInFile(char *inputFile, char *cardHash) {
 	if (strlen(cardHash) != HASHLENGTH) {
 		return 0;
 	}
@@ -44,7 +44,9 @@ bool cardInFile(char *inputFile, char *cardHash) {
 	openFile.close();  // just in case
 
 	openFile = SD.open(inputFile);
-	uint8_t retVal = 0;
+
+  int retVal = 1; // 0 = success, 1 = failure, 2 = special exception
+
 	char fileHash[BUFSIZ];
 	int i;
 
@@ -53,7 +55,7 @@ bool cardInFile(char *inputFile, char *cardHash) {
 
 	ParseState state;
 
-	while ((retVal == false) && (openFile.available())) {	// parse file contents:
+	while ((retVal == 1) && (openFile.available())) {	// parse file contents:
 		i = 0;
 		j = 0;
 		state = PARSE_HASH;
@@ -123,15 +125,15 @@ bool cardInFile(char *inputFile, char *cardHash) {
         int dayOfWeek = now.dayOfWeek();
         int hour = now.hour();
 
-        if ( ( schedule[dayOfWeek][0] > 0 ) || ( schedule[dayOfWeek][1] > 0 ) ){
-          if ( ( hour >= schedule[dayOfWeek][0] ) && ( hour <= schedule[dayOfWeek][1] ) ){
-            retVal = true;
-          }
+        if ( ( hour >= schedule[dayOfWeek][0] ) && ( hour < schedule[dayOfWeek][1] ) ){
+          retVal = 0;
         }
-
+        else {
+          retVal = 2;
+        }
 			}
 			else {
-				retVal = true;
+				retVal = 0;
 			}
 		}
 	}
