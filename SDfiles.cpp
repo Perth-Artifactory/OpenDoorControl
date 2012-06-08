@@ -99,37 +99,43 @@ int cardInFile(char *inputFile, char *cardHash) {
 		if (i <= 0) {
 		  // Blank line, don't compare
 		}
-		else if (strcmp(fileHash, cardHash) == 0) {   // If the hash matches
-			if (j > 0) {
-        // Interpret the scheduler data
-        // Scheduler data is 41 characters
-        int schedule[7][2] = {0};
-        for (int d = 0; d <= 6; d++){
-          int offset = ( d * 5 ) + ( d * 1 );
+		else if (strcmp(fileHash, cardHash) == 0) {     // If the hash matches,
+			if (j > 0) {                                  // the line has schedule information on it
+        if(RTC.isrunning()){                        // and the RTC is running
+          // Interpret the scheduler data
+          // Scheduler data is 41 characters
+          int schedule[7][2] = {0};
+          for (int d = 0; d <= 6; d++){
+            int offset = ( d * 5 ) + ( d * 1 );
 
-          // There is likely a better way to do this but I can't think of it.
-          char startHour[3] = {0};
-          startHour[0] = fileSchedule[offset];
-          startHour[1] = fileSchedule[offset+1];
-          startHour[2] = fileSchedule[offset+2];
+            // There is likely a better way to do this but I can't think of it.
+            char startHour[3] = {0};
+            startHour[0] = fileSchedule[offset];
+            startHour[1] = fileSchedule[offset+1];
+            startHour[2] = fileSchedule[offset+2];
 
-          char finishHour[3] = {0};
-          finishHour[0] = fileSchedule[offset+4];
-          finishHour[1] = fileSchedule[offset+5];
-          finishHour[2] = fileSchedule[offset+6];
+            char finishHour[3] = {0};
+            finishHour[0] = fileSchedule[offset+4];
+            finishHour[1] = fileSchedule[offset+5];
+            finishHour[2] = fileSchedule[offset+6];
 
-          schedule[d][0] = atoi(startHour);
-          schedule[d][1] = atoi(finishHour);
+            schedule[d][0] = atoi(startHour);
+            schedule[d][1] = atoi(finishHour);
+          }
+
+          int dayOfWeek = now.dayOfWeek();
+          int hour = now.hour();
+
+          if ( ( hour >= schedule[dayOfWeek][0] ) && ( hour < schedule[dayOfWeek][1] ) ){
+            retVal = 0;
+          }
+          else {
+            retVal = 2;
+          }
         }
-
-        int dayOfWeek = now.dayOfWeek();
-        int hour = now.hour();
-
-        if ( ( hour >= schedule[dayOfWeek][0] ) && ( hour < schedule[dayOfWeek][1] ) ){
+        else {  // If the RTC is offline then we should unconditionally allow restricted users.
+          fileWrite(logFile, "Allowing restricted member access due to RTC failure.", "", true);
           retVal = 0;
-        }
-        else {
-          retVal = 2;
         }
 			}
 			else {

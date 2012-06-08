@@ -67,9 +67,7 @@ void checksumOk(char *cardHash) {  // when the checksum is ok
 	MemberType result = authCard(cardHash);
 	if (result != 0) {
 		fileWrite(logFile, "Authentication Success: ", cardHash, true);
-
 		slowTimers[TIMERLCDTIME].start = theTime;
-		openTheDoor();
 		lcd.setCursor(0, 1);
 		switch (result) {
 			case MEMBERTYPE_FULL: {
@@ -99,6 +97,7 @@ void checksumOk(char *cardHash) {  // when the checksum is ok
 
 		if ( ( !spaceOpen ) && ( shouldOpenSpace ) ) {
 			openSpace();  // does logging itself
+			openTheDoor();
 		}
 	}
 	else {
