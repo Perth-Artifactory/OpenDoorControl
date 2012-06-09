@@ -27,6 +27,8 @@
 #include "SDfiles.h"
 #include "control.h"
 
+//#define DEBUG
+
 void pollRFIDbuffer() {
   static int i = 0;  // position within the raw string
   static char rfidString[RFIDSTRINGLENGTH + 1];	// the raw string off the RFID reader, +null term
@@ -63,32 +65,55 @@ void checksumOk(char *cardHash) {  // when the checksum is ok
 //  Serial.print("checksum valid, hash = ");
 //  Serial.println(cardHash);
 
+	bool shouldOpenSpace = false; // Not all authentication successes should open the space.
+
 	MemberType result = authCard(cardHash);
 	if (result != 0) {
 		fileWrite(logFile, "Authentication Success: ", cardHash, true);
-		if (!spaceOpen) {
-			openSpace();  // does logging itself
-		}
 		slowTimers[TIMERLCDTIME].start = theTime;
-		openTheDoor();
 		lcd.setCursor(0, 1);
 		switch (result) {
-			case MEMBERTYPE_FULL: {
+			case MEMBERTYPE_FULL:
 				lcd.print("Member Card");
+				shouldOpenSpace = true;
+				openTheDoor();
 				break;
-			}
-			case MEMBERTYPE_RESTRICTED: {
+
+			case MEMBERTYPE_RESTRICTED:
 				lcd.print("Restricted Card");
+				shouldOpenSpace = true;
+				openTheDoor();
 				break;
-			}
-			case MEMBERTYPE_ASSOCIATE: {
-				lcd.print("Associate Card");
+
+			case MEMBERTYPE_RESTRICTED_OUT_OF_HOURS:
+				fileWrite(logFile, "Restricted card out of hours", "", true);
+				DoorStatus(1, 1, 0); // Flash yellow to indicate out-of-hours access attempt
 				break;
-			}
-			default: {
+
+			case MEMBERTYPE_RESTRICTED_NO_RTC:
+				fileWrite(logFile, "Restricted card, No RTC", "", true);
+				shouldOpenSpace = true;
+				openTheDoor();
+				break;
+
+			case MEMBERTYPE_ASSOCIATE:
+				if (spaceOpen) {
+					fileWrite(logFile, "Associate Card", "", false);
+					openTheDoor();
+				}
+				else {
+					fileWrite(logFile, "Associate card, space not open.", "", false);
+					DoorStatus(1, 1, 0);
+				}
+				break;
+
+			default:
 				lcd.print("Ow! Ow! Ow! Ow!");	// This should never happen
 				break;
-			}
+		}
+
+		if ( ( !spaceOpen ) && ( shouldOpenSpace ) ) {
+			openSpace();  // does logging itself
 		}
 	}
 	else {
@@ -141,37 +166,33 @@ MemberType authCard(char *cardHash) {
 	MemberType retVal = MEMBERTYPE_NONE;
 
 	// Checks the cardHash against the full member hash file
-	if (cardInFile(fullFile, cardHash)) {
+	if (cardInFile(fullFile, cardHash) == 0) {
 		retVal = MEMBERTYPE_FULL;
 	}
+	else if (cardInFile(assocFile, cardHash) == 0) {
+		retVal = MEMBERTYPE_ASSOCIATE;
+	}
 	else {
-		// Checks the cardHash against the rest member hash file, and their day mask
-		uint8_t dayMask = cardInFile(restFile, cardHash);
-		/*Serial.print("cardHash = ");
-		Serial.print(cardHash);
-		Serial.print("\r\ndaymask = ");
-		Serial.print(dayMask);
-		Serial.print("\r\n");*/
-		if (dayMask > 0) {
-			DateTime now(theTime);
-			if (((1 << now.dayOfWeek()) & dayMask) != 0) {
-				retVal = MEMBERTYPE_RESTRICTED;
-			}
-			else {
-				// Is a restricted member, but this isn't their day(s).
-			}
+		int schedStatus = cardInFile(restFile, cardHash);
+
+		#ifdef DEBUG
+			Serial.print("Card Return Value: ");
+			Serial.println(schedStatus);
+		#endif
+
+		if (schedStatus == 0) {
+			retVal = MEMBERTYPE_RESTRICTED;
 		}
-		else {
-			// Checks the cardHash against the assoc member hash file, if door open
-			if (spaceOpen) {
-				if (cardInFile(assocFile, cardHash)) {
-				  retVal = MEMBERTYPE_ASSOCIATE;
-				}
-			}
+		else if (schedStatus == 2) {
+			retVal = MEMBERTYPE_RESTRICTED_OUT_OF_HOURS;
+		}
+		else if (schedStatus == 3) {
+			retVal = MEMBERTYPE_RESTRICTED_NO_RTC;
 		}
 	}
 	return retVal;
 }
+	
 
 
 

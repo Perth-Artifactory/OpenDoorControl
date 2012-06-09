@@ -114,17 +114,26 @@ void runInterruptServices() {  //called from loop, take your time.
 
     fileWrite(logFile, "Door Bell!", "", true);
 
-	if (spaceOpen) {
-		if (guestAccess) {			// If the space is open and guest access is enabled
-			openTheDoor();			// just open the door
+    if (spaceGrace) {				// Special condition if the space is within the post-lockup grace period.
+    	fileWrite(logFile, "Space opened within grace period.","",true);
+    	slowTimers[TIMEREXITGRACE].active = false;	// Stop the grace period timer
+ 		fastTimers[TIMERLEDFADER].active = false;	// Stop the LED blink timer
+ 		openSpace();								// Reset the space to open
+    	openTheDoor();								// Open the door
+    }
+    else {
+		if (spaceOpen) {
+			if (guestAccess) {			// If the space is open and guest access is enabled
+				openTheDoor();			// just open the door
+			}
+			else {						// if the space is open without guest access being enabled
+				DoorBell();				// sound the doorbell
+				DoorStatus(0, 0, 1);	// and illuminate the blue door status LED
+			}
 		}
-		else {						// if the space is open without guest access being enabled
-			DoorBell();				// sound the doorbell
-			DoorStatus(0, 0, 1);	// and illuminate the blue door status LED
+		else {							// finally, if the space isnt open				
+			DoorStatus(1, 0, 0);		// illuminate the red door status LED
 		}
-	}
-	else {							// finally, if the space isnt open				
-		DoorStatus(1, 0, 0);		// illuminate the red door status LED
 	}
   }
 
@@ -156,26 +165,28 @@ void runInterruptServices() {  //called from loop, take your time.
 
 			if (guestAccess) {
 				fileWrite(logFile, "Guests", "Allowed", true);
-				digitalWrite(GUESTOKLED, HIGH);
 			}
 			else {
 				fileWrite(logFile, "Guests", "Denied", true);
-				digitalWrite(GUESTOKLED, LOW);
 			}
-			digitalWrite(DOORBELLLED, (guestAccess ? HIGH : LOW));
 		}
 //    postStateSpace(false);  //tell the server right now.
   }
 
 	if ((LOCKUPBIT & interruptFlags) != 0) {
 		interruptFlags &= ~LOCKUPBIT;
-
-		fileWrite(logFile, "Lockup pressed", "", true);
-		closeSpace();
+		if (spaceOpen) {
+			fileWrite(logFile, "Lockup pressed", "", true);
+			closeSpace();
+		}
+		else {
+			fileWrite(logFile, "Space already locked", "", true);
+		}
 	}
 
-	digitalWrite(LOCKUPLED, (spaceOpen ? LOW : HIGH));
+	// Status indicators LED settings go here.
+	if ( !spaceGrace ) { digitalWrite(LOCKUPLED, (spaceOpen ? LOW : HIGH)); }
 	digitalWrite(GUESTOKLED, (guestAccess ? HIGH : LOW));
-
+	digitalWrite(DOORBELLLED, (guestAccess ? HIGH : LOW));
 }
 

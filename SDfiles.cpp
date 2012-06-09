@@ -26,143 +26,179 @@
 //#include "Sha/sha1.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <avr/wdt.h>
 
-#if 0 // Brett's v1
-bool cardInFile(char *inputFile, char *cardHash) {
-  openFile.close();  //just in case
+//#define DEBUG2
+//#define DEBUG3
 
-  openFile = SD.open(inputFile);
-  bool retVal = false;
-  char line[BUFSIZ];
-  int i = 0;
-
-  while((retVal == false) && (openFile.available())){
-    //parse file contents.
-    char c = ' ';  //I can't think of a better defualt to enter the loop with
-    while((c != '\n') /*&& (c != COMMENTCHAR)*/ && (openFile.available()) /*&& (i < BUFSIZ)*/){
-
-
-      if (i == BUFSIZ) {
-//        Serial.println("buffer overrun");
-        i=0;
-        while((openFile.peek() != '\n') && (openFile.available())){  //seek the end of the line
-          openFile.read();
-        }
-      }
-      else if(c == COMMENTCHAR) {
-//        Serial.println("comment begins");
-        while((openFile.peek() != '\n') && (openFile.available())){  //seek the end of the line
-          openFile.read();
-        }
-      }
-      else if((c != ' ')&&(c != '\t')) {
-//        Serial.print("*");
-        line[i] = c;
-        i++;
-      }
-
-      c = openFile.read();
-//      Serial.print(c);
-
-    }
-
-    line[i] = '\0';
-    //now we can have different lengths of hash
-//    Serial.print("comparing Strings: ");
-//    Serial.print(line);
-//    Serial.print(" , ");
-//    Serial.println(cardHash);
-
-//    if(stringCompare(line, cardHash)){
-//      retVal = true;
-//    }
-	if (strcmp(line, cardHash) == 0) {
-		retVal = true;
-	}
-    i = 0;
-    
-  }
-  openFile.close();
-  return retVal;
-}
-#endif
+#define SCHEDULECHARS 41
 
 typedef enum {
 	//PARSE_BEGIN = 0,
 	PARSE_HASH = 1,
-	PARSE_DAYMASK,
+	PARSE_SCHEDULE,
 	PARSE_COMMENT
 } ParseState;
 
-uint8_t cardInFile(char *inputFile, char *cardHash) {
+int cardInFile(char *inputFile, char *cardHash) {
 	if (strlen(cardHash) != HASHLENGTH) {
-		//	Serial.println("Noise");
 		return 0;
 	}
+
+  #ifdef DEBUG
+    Serial.print("Parsing file: ");
+    Serial.println(inputFile);
+  #endif
+
+  DateTime now(theTime); // What's the time
 
 	openFile.close();  // just in case
 
 	openFile = SD.open(inputFile);
-	uint8_t retVal = 0;
+
+  int retVal = 1; // 0 = success, 1 = failure, 2 = special exception
+
 	char fileHash[BUFSIZ];
 	int i;
-	char fileDay[BUFSIZ];
+
+	char fileSchedule[BUFSIZ];
 	int j;
+
 	ParseState state;
 
-	while ((retVal == false) && (openFile.available())) {	// parse file contents:
+	while ((retVal == 1) && (openFile.available())) {	// parse file contents:
 		i = 0;
 		j = 0;
 		state = PARSE_HASH;
-		char c = ' ';  // I can't think of a better defualt to enter the loop with
-		while ((c != '\n') /*&& (c != COMMENTCHAR)*/ && (openFile.available()) /*&& (i < BUFSIZ)*/) {
-			c = openFile.read();
+		char c = ' ';  // I can't think of a better default to enter the loop with
+    #ifdef DEBUG
+      Serial.println("Starting read");
+    #endif
 
-			if (c == COMMENTCHAR) {
-				state = PARSE_COMMENT;
-			}
-			else if ((c == ' ') || (c == '\t')) {
-				if ((state == PARSE_HASH) && (i > 0)) {
-					state = PARSE_DAYMASK;
-				}
-				if ((state == PARSE_DAYMASK) && (j > 0)) {
-					state = PARSE_COMMENT;
-				}
-			}
-			else {
-				if (state == PARSE_HASH) {
-					if (i > BUFSIZ) {
-						state = PARSE_COMMENT;
-					}
-					fileHash[i] = c;
-					i++;
-				}
-				else if (state == PARSE_DAYMASK) {
-					if (j > BUFSIZ) {
-						state = PARSE_COMMENT;
-					}
-					fileDay[j] = c;
-					j++;
-				}
-				//else { } // PARSE_COMMENT = do nothing
-			}
-		}
+		while ((c != '\n') && (openFile.available())) {
+		  c = openFile.read();
+        if ( ( ( c == ' ' ) || ( c == '\t' ) ) && ( state != PARSE_COMMENT ) )
+        {
+            state = PARSE_SCHEDULE;
+        }
+        else if ( c == COMMENTCHAR ) {
+            state = PARSE_COMMENT;
+        }
+        else if ( c == '\n' ) {
+            // Do Nothing
+        }
+        else {
+
+          #ifdef DEBUG1
+            wdt_reset();
+            Serial.print("Reading character: ");
+            Serial.print(c);
+            Serial.print(" into ");
+          #endif
+
+          // Here we read the character into the correct buffer
+          switch (state) {
+            case PARSE_HASH:
+              #ifdef DEBUG1
+                Serial.println("Hash");
+              #endif
+              fileHash[i] = c;
+              i++;
+              break;
+
+            case PARSE_SCHEDULE:
+              #ifdef DEBUG1
+                Serial.println("Schedule");
+              #endif
+              fileSchedule[j] = c;
+              j++;
+              break;
+
+            case PARSE_COMMENT:
+              #ifdef DEBUG1
+                Serial.println("Comment");
+              #endif
+              //If we want to do something with comments we can do it here
+              break;
+          }
+        }
+      }
 
 		fileHash[i] = '\0';
-		fileDay[j] = '\0';
+		fileSchedule[j] = '\0';
+
+      #ifdef DEBUG3
+        if (i > 0) {
+          Serial.print("File Hash: \"");
+          Serial.print(fileHash);
+          Serial.println("\"");
+        }
+        if (j > 0) {
+          Serial.print("Schedule: \"");
+          Serial.print(fileSchedule);
+          Serial.println("\"");
+        }
+      #endif
 
 		if (i <= 0) {
-			// Blank line, don't compare
+		  // Blank line, don't compare
 		}
-		else if (strcmp(fileHash, cardHash) == 0) {
-			if (j > 0) {
-				retVal = (uint8_t)(atoi(fileDay) & 0x7f);
-				//if ((retVal == INT_MAX) || (retVal == INT_MIN)) {
-				//	retVal = 0;
-				//}
+		else if (strcmp(fileHash, cardHash) == 0) {     // If the hash matches,
+			if (j > 0) {                                  // the line has schedule information on it
+        if(RTC.isrunning()){                        // and the RTC is running
+
+          #ifdef DEBUG
+            Serial.print("File Schedule: ");
+            Serial.println(fileSchedule);
+          #endif
+
+          // Interpret the scheduler data
+          // Scheduler data is 41 characters
+          int schedule[7][2] = {0};
+          for (int d = 0; d <= 6; d++){
+            int offset = ( d * 5 ) + ( d * 1 );
+
+            // There is likely a better way to do this but I can't think of it right now.
+            char startHour[3] = {0};
+            startHour[0] = fileSchedule[offset];
+            startHour[1] = fileSchedule[offset+1];
+
+            char finishHour[3] = {0};
+            finishHour[0] = fileSchedule[offset+3];
+            finishHour[1] = fileSchedule[offset+4];
+
+            #ifdef DEBUG2
+              Serial.print("Start Hour for Day ");
+              Serial.print(d);
+              Serial.print(" : ");
+              Serial.println(startHour);
+
+              Serial.print("Finish Hour for Day ");
+              Serial.print(d);
+              Serial.print(" : ");
+              Serial.println(finishHour);
+            #endif
+
+            schedule[d][0] = atoi(startHour);
+            schedule[d][1] = atoi(finishHour);
+          }
+
+          int dayOfWeek = now.dayOfWeek();
+          int hour = now.hour();
+
+          if ( ( hour >= schedule[dayOfWeek][0] ) && ( hour < schedule[dayOfWeek][1] ) ){
+            retVal = 0;
+          }
+          else {
+            retVal = 2;
+          }
+        }
+        else {  // If the RTC is offline then we should unconditionally allow restricted users.
+          retVal = 3;
+        }
 			}
 			else {
-				retVal = 0x7f;
+				retVal = 0;
 			}
 		}
 	}

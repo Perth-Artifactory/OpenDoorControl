@@ -17,7 +17,8 @@
 #
 
 #PORT = /dev/ttyUSB0
-PORT = /dev/ttyACM0
+#PORT = /dev/ttyACM0
+PORT = /dev/tty.usbmodemfd121
 #MCU = atmega1281
 MCU = atmega2560
 #F_CPU = 8000000
@@ -28,6 +29,7 @@ UPLOAD_RATE = 115200
 
 TARGET = OpenDoorControl
 #ARDUINO = /usr/share/arduino/hardware/arduino/variants/mega
+#PATH=${PATH}:/Applications/Arduino.app/Contents/Resources/Java/hardware/tools/avr/bin
 ARDUINO = /usr/share/arduino/hardware/arduino/cores/arduino
 LIBS = WString.cpp Print.cpp LiquidCrystal.cpp File.cpp HardwareSerial.cpp SD.cpp SdFile.cpp SdVolume.cpp Sd2Card.cpp Wire.cpp new.cpp main.cpp
 #vpath %.cpp $(subst ${ },:,$(wildcard $(ARDUINO)/*/))
@@ -37,7 +39,7 @@ vpath %.c $(subst ${ },:,$(wildcard /usr/share/arduino/libraries/*/utility))
 vpath %.cpp /usr/share/arduino/hardware/arduino/cores/arduino
 vpath %.cpp $(subst ${ },:,$(wildcard /usr/share/arduino/libraries/*/))
 vpath %.cpp $(subst ${ },:,$(wildcard /usr/share/arduino/libraries/*/utility))
-SRC = wiring.c wiring_digital.c twi.c
+SRC = wiring.c wiring_digital.c wiring_analog.c twi.c
 CXXSRC = $(TARGET).cpp $(LIBS) aux.cpp control.cpp general.cpp interrupts.cpp RFID.cpp SDfiles.cpp RTClib/RTClib.cpp
 #CXXSRC = $(wildcard *.cpp) $(LIBS)
 
@@ -84,7 +86,7 @@ CTUNING = -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS = $(CDEBUG) $(CDEFS) $(CINCS) -O$(OPT) $(CWARN) $(CSTANDARD) $(CEXTRA)
 CXXFLAGS = $(CDEFS) $(CINCS) $(CXXINCS) -O$(OPT)
 #ASFLAGS = -Wa,-adhlns=$(<:.S=.lst),-gstabs 
-LDFLAGS = 
+LDFLAGS = -lm
 
 
 # Programming support using avrdude. Settings and variables.

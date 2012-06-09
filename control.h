@@ -38,6 +38,11 @@ void DoorBell();
 void DoorBellRefresh();
 void DoorStatus(bool r, bool g, bool b);
 void DoorStatusRefresh();
+void closeSpaceFinal();
+void ledBlink();
+void ledFade();
+void clearFade();
+//void induceDeath();
 
 #endif /* CONTROL_H */
 

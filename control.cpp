@@ -44,9 +44,14 @@ void theTimeIncrement() {
 
 void pollSlowTimers() {
   for (int i = 0; i < NUMSLOWTIMERS; i++){
+    int ohShit = 0;
     while ((slowTimers[i].active) && ((theTime - slowTimers[i].start) > slowTimers[i].period)) {
       slowTimers[i].start += slowTimers[i].period;
       slowTimers[i].expire();
+      if ( ohShit >= 100 ) {
+          fileWrite(logFile, "Runaway Loop on timer ", &"123456"[i], true);
+      }
+      ohShit++;
     }
   }
 }
@@ -64,17 +69,56 @@ void dumpLogs() {
 
 void openSpace() {
   fileWrite(logFile, "Opening Space", "", true);
-
   // TODO: tell the server the space is open
   spaceOpen = true;
+  spaceGrace = false;
 }
 
 void closeSpace() {
-  fileWrite(logFile, "Closing Space", "", true);
-  // TODO: tell the server the space is closed
+  fileWrite(logFile, "Space closing, grace period started", "", true);
+  slowTimers[TIMEREXITGRACE].start = theTime;
+  slowTimers[TIMEREXITGRACE].active = true;
+
+  fadePins[0] = STATUS_R;
+  fadePins[1] = LOCKUPLED;
+
+  fastTimers[TIMERLEDFADER].start = micros();
+  fastTimers[TIMERLEDFADER].active = true;
+
   spaceOpen = false;
   guestAccess = false;
+  spaceGrace = true;
 }
+
+void closeSpaceFinal() {
+  fileWrite(logFile, "Closing Space", "", true);
+  slowTimers[TIMEREXITGRACE].active = false;
+  fastTimers[TIMERLEDFADER].active = false;
+
+  clearFade();
+
+  // TODO: tell the server the space is closed
+  DoorStatus(1, 0, 1);
+  spaceOpen = false;
+  guestAccess = false;
+  spaceGrace = false;
+}
+
+//void induceDeath() {
+//  unsigned long diffTime = theTime;
+//  fileWrite(logFile, "Manually Shifting: ", "+20", true);
+//  theTime += 20;
+//  fileWrite(logFile, "Time Adjusted", "", true);
+//  diffTime = theTime - diffTime;
+//  for(int i = 0; i < NUMSLOWTIMERS; i++){
+//    slowTimers[i].start +=diffTime;
+//  }
+
+ // fileWrite(logFile, "Timers Updated", "", true);
+  //fetchTime();
+//}
+
+
 
 void openTheDoor() {
   // Trigger the door strike
@@ -83,7 +127,9 @@ void openTheDoor() {
   fastTimers[TIMERSTRIKE].start = micros();
   fastTimers[TIMERSTRIKE].active = true;
   //DoorStatus(0, 1, 0);
+  digitalWrite(STATUS_R, LOW);
   digitalWrite(STATUS_G, HIGH);
+  digitalWrite(STATUS_B, LOW);
 }
 
 void closeTheDoor() {
@@ -97,7 +143,27 @@ void LCDrefresh() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Artifactory Door");
-  lcdDisplayTime(1);
+
+  // There are some states that require ongoing display of data.
+
+  // If the space is in the lockup grace period, show the countdown
+  if (spaceGrace) {
+    lcd.setCursor(0, 1);
+    char output[17];
+    int remainingTime = slowTimers[TIMEREXITGRACE].period - ( theTime - slowTimers[TIMEREXITGRACE].start );
+    sprintf(output, "Lock in %d Sec\0", remainingTime);
+    lcd.print(output);
+    return;
+  }
+
+  // By default just display the time (unless the RTC is borked)
+  if (RTC.isrunning()) {
+    lcdDisplayTime(1);
+  }
+  else {
+    lcd.setCursor(0, 1);
+    lcd.print("WARN:RTC Offline\0");
+  } 
 }
 
 void DoorBell() {
@@ -126,3 +192,31 @@ void DoorStatusRefresh() {
 	slowTimers[TIMERDOORSTATUS].active = false;
 }
 
+void ledBlink(){
+  if ( blinkPin <= 0) { return; }
+  digitalWrite(blinkPin, ( blinkStatus ? HIGH : LOW ));
+  blinkStatus = !blinkStatus;
+}
+
+void ledFade(){
+  int f = 0;
+  int fadePin = 0;
+  float faderSeed = millis()/fadeTime;
+  int fVal = 127 + (127 * sin( faderSeed * 2.0 * 3.14159 ));
+
+  while (f < LEDFADERCOUNT) {
+    fadePin = fadePins[f];
+    if ( fadePin > 0) {
+      analogWrite(fadePin, fVal);
+    }
+    f++;
+  }
+}
+
+void clearFade() {
+  int f = 0;
+  while (f < LEDFADERCOUNT) {
+    fadePins[f] = 0;
+    f++;
+  }
+}

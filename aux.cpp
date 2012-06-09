@@ -40,6 +40,7 @@ void auxSetup() {
 void fetchTime() {
   RTC.begin();
   if(RTC.isrunning()){
+    fileWrite(logFile, "RTC poll started.", "", true);
     DateTime now = RTC.now();    //when is the RTC epoch?
     unsigned long diffTime = theTime;
     fileWrite(logFile, "RTC online.", "", true);
