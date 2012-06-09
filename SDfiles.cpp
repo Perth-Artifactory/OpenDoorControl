@@ -26,15 +26,17 @@
 //#include "Sha/sha1.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <avr/wdt.h>
 
-#define DEBUG
+//#define DEBUG2
+//#define DEBUG3
 
 #define SCHEDULECHARS 41
 
 typedef enum {
 	//PARSE_BEGIN = 0,
 	PARSE_HASH = 1,
-	PARSE_DAYMASK,
+	PARSE_SCHEDULE,
 	PARSE_COMMENT
 } ParseState;
 
@@ -59,7 +61,7 @@ int cardInFile(char *inputFile, char *cardHash) {
 	char fileHash[BUFSIZ];
 	int i;
 
-	char fileSchedule[41];
+	char fileSchedule[BUFSIZ];
 	int j;
 
 	ParseState state;
@@ -74,75 +76,67 @@ int cardInFile(char *inputFile, char *cardHash) {
     #endif
 
 		while ((c != '\n') && (openFile.available())) {
-			c = openFile.read();
+		  c = openFile.read();
+        if ( ( ( c == ' ' ) || ( c == '\t' ) ) && ( state != PARSE_COMMENT ) )
+        {
+            state = PARSE_SCHEDULE;
+        }
+        else if ( c == COMMENTCHAR ) {
+            state = PARSE_COMMENT;
+        }
+        else if ( c == '\n' ) {
+            // Do Nothing
+        }
+        else {
 
-      #ifdef DEBUG
-        Serial.print(c);
-      #endif
-
-			if (c == COMMENTCHAR) {
-
-        #ifdef DEBUG
-          Serial.println();
-          Serial.println("Parsing Comment (1)");
-        #endif
-
-				state = PARSE_COMMENT;
-			}
-			else if ((c == ' ') || (c == '\t')) {
-				if ((state == PARSE_HASH) && (i > 0)) {
-          #ifdef DEBUG
-            Serial.println();
-            Serial.println("Parsing Schedule");
+          #ifdef DEBUG1
+            wdt_reset();
+            Serial.print("Reading character: ");
+            Serial.print(c);
+            Serial.print(" into ");
           #endif
-					state = PARSE_DAYMASK;
-				}
-				if ((state == PARSE_DAYMASK) && (j > 0)) {
-          #ifdef DEBUG
-            Serial.println();
-            Serial.println("Parsing Comment (2)");
-          #endif
-					state = PARSE_COMMENT;
-				}
-			}
-			else {
-				if (state == PARSE_HASH) {
-					if (i > BUFSIZ) {
-            #ifdef DEBUG
-              Serial.println();
-              Serial.println("Parsing Comment (3)");
-            #endif
-						state = PARSE_COMMENT;
-					}
-					fileHash[i] = c;
-					i++;
-				}
-				else if (state == PARSE_DAYMASK) {
-					if (j > SCHEDULECHARS) {
-            #ifdef DEBUG
-              Serial.println();
-              Serial.println("Parsing Comment (4)");
-            #endif
-						state = PARSE_COMMENT;
-					}
-					fileSchedule[j] = c;
-					j++;
-				}
-				//else { } // PARSE_COMMENT = do nothing
-			}
-		}
 
-    #ifdef DEBUG
-      Serial.println();
-    #endif
+          // Here we read the character into the correct buffer
+          switch (state) {
+            case PARSE_HASH:
+              #ifdef DEBUG1
+                Serial.println("Hash");
+              #endif
+              fileHash[i] = c;
+              i++;
+              break;
+
+            case PARSE_SCHEDULE:
+              #ifdef DEBUG1
+                Serial.println("Schedule");
+              #endif
+              fileSchedule[j] = c;
+              j++;
+              break;
+
+            case PARSE_COMMENT:
+              #ifdef DEBUG1
+                Serial.println("Comment");
+              #endif
+              //If we want to do something with comments we can do it here
+              break;
+          }
+        }
+      }
 
 		fileHash[i] = '\0';
 		fileSchedule[j] = '\0';
 
-      #ifdef DEBUG
+      #ifdef DEBUG3
         if (i > 0) {
-          Serial.print("File Hash: ");
-          Serial.println(fileHash);
+          Serial.print("File Hash: \"");
+          Serial.print(fileHash);
+          Serial.println("\"");
+        }
+        if (j > 0) {
+          Serial.print("Schedule: \"");
+          Serial.print(fileSchedule);
+          Serial.println("\"");
         }
       #endif
 
@@ -168,24 +162,23 @@ int cardInFile(char *inputFile, char *cardHash) {
             char startHour[3] = {0};
             startHour[0] = fileSchedule[offset];
             startHour[1] = fileSchedule[offset+1];
-            startHour[2] = fileSchedule[offset+2];
 
             char finishHour[3] = {0};
-            finishHour[0] = fileSchedule[offset+4];
-            finishHour[1] = fileSchedule[offset+5];
-            finishHour[2] = fileSchedule[offset+6];
+            finishHour[0] = fileSchedule[offset+3];
+            finishHour[1] = fileSchedule[offset+4];
 
-            #ifdef DEBUG
+            #ifdef DEBUG2
               Serial.print("Start Hour for Day ");
               Serial.print(d);
-              Serial.print(" :");
+              Serial.print(" : ");
               Serial.println(startHour);
 
               Serial.print("Finish Hour for Day ");
               Serial.print(d);
-              Serial.print(" :");
+              Serial.print(" : ");
               Serial.println(finishHour);
             #endif
+
             schedule[d][0] = atoi(startHour);
             schedule[d][1] = atoi(finishHour);
           }

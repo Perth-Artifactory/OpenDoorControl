@@ -27,8 +27,8 @@
 #include "SDfiles.h"
 #include "control.h"
 
-#define DEBUG
-  
+//#define DEBUG
+
 void pollRFIDbuffer() {
   static int i = 0;  // position within the raw string
   static char rfidString[RFIDSTRINGLENGTH + 1];	// the raw string off the RFID reader, +null term
@@ -76,11 +76,13 @@ void checksumOk(char *cardHash) {  // when the checksum is ok
 			case MEMBERTYPE_FULL:
 				lcd.print("Member Card");
 				shouldOpenSpace = true;
+				openTheDoor();
 				break;
 
 			case MEMBERTYPE_RESTRICTED:
 				lcd.print("Restricted Card");
 				shouldOpenSpace = true;
+				openTheDoor();
 				break;
 
 			case MEMBERTYPE_RESTRICTED_OUT_OF_HOURS:
@@ -91,6 +93,7 @@ void checksumOk(char *cardHash) {  // when the checksum is ok
 			case MEMBERTYPE_RESTRICTED_NO_RTC:
 				fileWrite(logFile, "Restricted card, No RTC", "", true);
 				shouldOpenSpace = true;
+				openTheDoor();
 				break;
 
 			case MEMBERTYPE_ASSOCIATE:
@@ -111,7 +114,6 @@ void checksumOk(char *cardHash) {  // when the checksum is ok
 
 		if ( ( !spaceOpen ) && ( shouldOpenSpace ) ) {
 			openSpace();  // does logging itself
-			openTheDoor();
 		}
 	}
 	else {
