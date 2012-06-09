@@ -27,6 +27,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define DEBUG
+
+#define SCHEDULECHARS 41
+
 typedef enum {
 	//PARSE_BEGIN = 0,
 	PARSE_HASH = 1,
@@ -38,6 +42,11 @@ int cardInFile(char *inputFile, char *cardHash) {
 	if (strlen(cardHash) != HASHLENGTH) {
 		return 0;
 	}
+
+  #ifdef DEBUG
+    Serial.print("Parsing file: ");
+    Serial.println(inputFile);
+  #endif
 
   DateTime now(theTime); // What's the time
 
@@ -60,30 +69,60 @@ int cardInFile(char *inputFile, char *cardHash) {
 		j = 0;
 		state = PARSE_HASH;
 		char c = ' ';  // I can't think of a better default to enter the loop with
-		while ((c != '\n') /*&& (c != COMMENTCHAR)*/ && (openFile.available()) /*&& (i < BUFSIZ)*/) {
+    #ifdef DEBUG
+      Serial.println("Starting read");
+    #endif
+
+		while ((c != '\n') && (openFile.available())) {
 			c = openFile.read();
 
+      #ifdef DEBUG
+        Serial.print(c);
+      #endif
+
 			if (c == COMMENTCHAR) {
+
+        #ifdef DEBUG
+          Serial.println();
+          Serial.println("Parsing Comment (1)");
+        #endif
+
 				state = PARSE_COMMENT;
 			}
 			else if ((c == ' ') || (c == '\t')) {
 				if ((state == PARSE_HASH) && (i > 0)) {
+          #ifdef DEBUG
+            Serial.println();
+            Serial.println("Parsing Schedule");
+          #endif
 					state = PARSE_DAYMASK;
 				}
 				if ((state == PARSE_DAYMASK) && (j > 0)) {
+          #ifdef DEBUG
+            Serial.println();
+            Serial.println("Parsing Comment (2)");
+          #endif
 					state = PARSE_COMMENT;
 				}
 			}
 			else {
 				if (state == PARSE_HASH) {
 					if (i > BUFSIZ) {
+            #ifdef DEBUG
+              Serial.println();
+              Serial.println("Parsing Comment (3)");
+            #endif
 						state = PARSE_COMMENT;
 					}
 					fileHash[i] = c;
 					i++;
 				}
 				else if (state == PARSE_DAYMASK) {
-					if (j > BUFSIZ) {
+					if (j > SCHEDULECHARS) {
+            #ifdef DEBUG
+              Serial.println();
+              Serial.println("Parsing Comment (4)");
+            #endif
 						state = PARSE_COMMENT;
 					}
 					fileSchedule[j] = c;
@@ -93,8 +132,19 @@ int cardInFile(char *inputFile, char *cardHash) {
 			}
 		}
 
+    #ifdef DEBUG
+      Serial.println();
+    #endif
+
 		fileHash[i] = '\0';
 		fileSchedule[j] = '\0';
+
+      #ifdef DEBUG
+        if (i > 0) {
+          Serial.print("File Hash: ");
+          Serial.println(fileHash);
+        }
+      #endif
 
 		if (i <= 0) {
 		  // Blank line, don't compare
@@ -102,13 +152,19 @@ int cardInFile(char *inputFile, char *cardHash) {
 		else if (strcmp(fileHash, cardHash) == 0) {     // If the hash matches,
 			if (j > 0) {                                  // the line has schedule information on it
         if(RTC.isrunning()){                        // and the RTC is running
+
+          #ifdef DEBUG
+            Serial.print("File Schedule: ");
+            Serial.println(fileSchedule);
+          #endif
+
           // Interpret the scheduler data
           // Scheduler data is 41 characters
           int schedule[7][2] = {0};
           for (int d = 0; d <= 6; d++){
             int offset = ( d * 5 ) + ( d * 1 );
 
-            // There is likely a better way to do this but I can't think of it.
+            // There is likely a better way to do this but I can't think of it right now.
             char startHour[3] = {0};
             startHour[0] = fileSchedule[offset];
             startHour[1] = fileSchedule[offset+1];
@@ -119,6 +175,17 @@ int cardInFile(char *inputFile, char *cardHash) {
             finishHour[1] = fileSchedule[offset+5];
             finishHour[2] = fileSchedule[offset+6];
 
+            #ifdef DEBUG
+              Serial.print("Start Hour for Day ");
+              Serial.print(d);
+              Serial.print(" :");
+              Serial.println(startHour);
+
+              Serial.print("Finish Hour for Day ");
+              Serial.print(d);
+              Serial.print(" :");
+              Serial.println(finishHour);
+            #endif
             schedule[d][0] = atoi(startHour);
             schedule[d][1] = atoi(finishHour);
           }
@@ -134,8 +201,7 @@ int cardInFile(char *inputFile, char *cardHash) {
           }
         }
         else {  // If the RTC is offline then we should unconditionally allow restricted users.
-          fileWrite(logFile, "Allowing restricted member access due to RTC failure.", "", true);
-          retVal = 0;
+          retVal = 3;
         }
 			}
 			else {
