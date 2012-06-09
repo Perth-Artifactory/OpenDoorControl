@@ -25,7 +25,7 @@
 #ifndef SDFILES_H
 #define SDFILES_H
 
-uint8_t cardInFile(char* inputFile, char* cardHash);
+int cardInFile(char* inputFile, char* cardHash);
 bool fileWrite(char* fileName, const char *logMessage, const char *logData, bool timeStamp);
 char* nextFileName(char* fileName, const char* filePrefix, const char* fileSuffix);
 char* hashFile(char* fileName);

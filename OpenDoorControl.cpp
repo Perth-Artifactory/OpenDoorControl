@@ -52,14 +52,17 @@ lessons learned:
 #include "RFID.h"
 #include "interrupts.h"
 
+#include <avr/wdt.h>
+
 LiquidCrystal lcd(32, 30, 28, 26, 24, 22);
 RTC_DS1307 RTC;  //using hardware i2c 18, 19
 
-bool SDcardPresent = false;		// true if sd card is accessible and has at least a full members file.
-bool spaceOpen = false;			// allows associate members
-bool guestAccess = false;		// links doorbell to doorstrike
-bool reedswitchState = false;	// TODO
-bool onNTPtime = false;			// true after the first NTP success.
+bool SDcardPresent = false;     // true if sd card is accessible and has at least a full members file.
+bool spaceOpen = false;         // allows associate members
+bool guestAccess = false;       // links doorbell to doorstrike
+bool reedswitchState = false;   // TODO
+bool onNTPtime = false;         // true after the first NTP success.
+bool spaceGrace = false;        // Space is in post-lockup grace period
 
 timer fastTimers[NUMFASTTIMERS];
 timer slowTimers[NUMSLOWTIMERS];
@@ -81,12 +84,25 @@ const char* logFilePrefix = "log";  //file writes are append operations on exist
 const char* logFileSuffix = ".txt";
 char logFile[13];  //the name we actually use
 
+bool blinkStatus = false;
+int blinkPin = 0;
+
+float fadeTime = 2000.0;
+
+int fadePins[LEDFADERCOUNT] = {};
 
 void setup() {
+  //wdt_disable();
+  wdt_reset();
+
+  // Set the watchdog timer to 8 seconds
+  wdt_enable(WDTO_8S);
+
   // start the serial library:
   Serial.begin(9600);	//debug messages
   Serial1.begin(9600);	//RFID
   Serial.println("Artifactory Door\r\n  Booting");
+
   auxSetup();
   fetchTime();
   lcdDisplayTime(1);
@@ -159,21 +175,31 @@ void setup() {
   fastTimers[TIMERSLOWPOLL].active = true;
   fastTimers[TIMERSLOWPOLL].expire = pollSlowTimers;
 
-  fastTimers[TIMERSTRIKE].period = 10 S;
+  fastTimers[TIMERSTRIKE].period = 5 S;
   fastTimers[TIMERSTRIKE].active = false;
   fastTimers[TIMERSTRIKE].expire = closeTheDoor;
+
+  fastTimers[TIMERLEDBLINK].period = 1 S; // Seconds
+  fastTimers[TIMERLEDBLINK].active = false;
+  fastTimers[TIMERLEDBLINK].expire = ledBlink;
+
+  fastTimers[TIMERLEDFADER].period = 10 MS;
+  fastTimers[TIMERLEDFADER].active = false;
+  fastTimers[TIMERLEDFADER].expire = ledFade;
+
 /*
   fastTimers[TIMERSERVER].period = 10 S;
   fastTimers[TIMERSERVER].active = false;
   fastTimers[TIMERSERVER].expire = serverTimeout;
 */
   //slow timers are measured against theTime
-  slowTimers[TIMERLOGDUMP].period = 3600;  // seconds
+  slowTimers[TIMERLOGDUMP].period = 86400;  // seconds
   slowTimers[TIMERLOGDUMP].start = theTime;
   slowTimers[TIMERLOGDUMP].active = true;
   slowTimers[TIMERLOGDUMP].expire = dumpLogs;
 
-  slowTimers[TIMERRTCREFRESH].period = 36000;  // ten hours
+  slowTimers[TIMERRTCREFRESH].period = 86400;  // ten hours
+  //slowTimers[TIMERRTCREFRESH].period = 15;  // ten hours
   slowTimers[TIMERRTCREFRESH].start = theTime;
   slowTimers[TIMERRTCREFRESH].active = true;
   slowTimers[TIMERRTCREFRESH].expire = fetchTime;
@@ -190,6 +216,14 @@ void setup() {
 	slowTimers[TIMERDOORSTATUS].period = 2;	// seconds
 	slowTimers[TIMERDOORSTATUS].active = false;
 	slowTimers[TIMERDOORSTATUS].expire = DoorStatusRefresh;
+
+  slowTimers[TIMEREXITGRACE].period = 60; // Give a 1 minute grace period post lockup
+  slowTimers[TIMEREXITGRACE].active = false;
+  slowTimers[TIMEREXITGRACE].expire = closeSpaceFinal;
+
+  //slowTimers[TIMERINDUCEDEATH].period = 10;
+  //slowTimers[TIMERINDUCEDEATH].active = true;
+  //slowTimers[TIMERINDUCEDEATH].expire = induceDeath;
 
   PCICR |= (1 << PCIE2);  //enable port-change interrupt on port-change-byte 2
   PCMSK2 |= DOORBELLBIT;
@@ -234,6 +268,7 @@ void loop() {
   pollRFIDbuffer(); //there is no indication or recovery if the RFID goes down.
   pollTimers();
   runInterruptServices();
-//  pollServerBuffer();
+  //  pollServerBuffer();
+  wdt_reset();  // Pat the watchdog
 }
 

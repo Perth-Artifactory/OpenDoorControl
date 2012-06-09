@@ -91,19 +91,29 @@ extern bool spaceOpen;
 extern bool guestAccess;
 extern bool reedswitchState;
 extern bool onNTPtime;
+extern bool spaceGrace;
+extern bool doorStatusRepeat;
 
 //Fast Timers ***************************************(uS)
-#define NUMFASTTIMERS 4
+#define NUMFASTTIMERS 5
 #define TIMERSECOND 0
 #define TIMERSLOWPOLL 1
 #define TIMERSTRIKE 2
+#define TIMERLEDBLINK 3
+#define TIMERLEDFADER 4
+
+
 //#define TIMERSERVER 3
-#define NUMSLOWTIMERS 5
+#define NUMSLOWTIMERS 6
 #define TIMERLOGDUMP 0
 #define TIMERRTCREFRESH 1
 #define TIMERLCDTIME 2
 #define TIMERDOORBELL 3
 #define TIMERDOORSTATUS 4
+#define TIMEREXITGRACE 5
+//#define TIMERINDUCEDEATH 6
+
+#define LEDFADERCOUNT 6
 
 extern timer fastTimers[NUMFASTTIMERS];
 extern timer slowTimers[NUMSLOWTIMERS];
@@ -130,6 +140,11 @@ extern char logFile[13];
 #define LOGDIGITS 4  //integer makes 4hex digits
 //archived logs will have LOGDIGITS hex digits following them
 
+extern bool blinkStatus;
+extern int blinkPin;
+
+extern int fadePins[LEDFADERCOUNT];
+extern float fadeTime;
 
 /*
 byte mac[] = {0x31, 0x41, 0x15, 0x92, 0x65, 0x38};  //the mac of the door
